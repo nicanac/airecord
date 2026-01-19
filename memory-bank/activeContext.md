@@ -1,17 +1,18 @@
 # Active Context
 
 ## Current Focus
-Initial project setup and scaffolding.
+Phase 2: Audio Capture & Streaming.
 
 ## Recent Changes
-- Project initialized from starter-pack.
-- Memory Bank populated with defined requirements.
-- Tech Stack selected: Next.js, Capacitor, Supabase, Gemini.
+- Phase 1 Foundation & Infrastructure completed.
+- Supabase schema applied with RLS and pgvector.
+- Capacitor initialized for iOS/Android.
+- Next.js static export enabled for mobile compatibility.
 
 ## Next Steps
-1.  Sync Memory Bank to Notion.
-2.  Bootstrap Next.js application.
-3.  Configure Supabase and Capacitor.
+1.  Build `RecordButton` component.
+2.  Implement microphone access.
+3.  Integrate streaming transcription.
 
 ## Active Decisions
 - **Mobile Strategy:** Using Capacitor instead of React Native to leverage web skills (React/Tailwind) while targeting native platforms.

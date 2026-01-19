@@ -14,6 +14,7 @@ Execute the complete task loop from `memory-bank/TASKS.md`:
 5. Create PR
 6. Sync completion to TASKS.md, Pinecone, and Notion
 7. Loop to next task
+**CRITICAL: This loop must NEVER stop before completing ALL tasks marked as incomplete in `memory-bank/TASKS.md`.**
 
 ## Pre-Flight Check
 

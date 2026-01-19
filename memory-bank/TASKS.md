@@ -30,7 +30,7 @@
 
 ## 🎙️ Phase 2: Audio Capture & Streaming
 
-- [ ] Build `RecordButton` component (floating action, pulsing animation) <!-- id: 2.1 -->
+- [/] Build `RecordButton` component (floating action, pulsing animation) <!-- id: 2.1 -->
 - [ ] Implement microphone access via Web Audio API / Capacitor <!-- id: 2.2 -->
 - [ ] Create `WaveformVisualizer` component (Canvas/SVG real-time feedback) <!-- id: 2.3 -->
 - [ ] Integrate streaming transcription provider <!-- id: 2.4 -->
