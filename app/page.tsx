@@ -1,15 +1,42 @@
+"use client";
+
+import { useState } from "react";
+import { RecordButton } from "@/components/RecordButton";
+
 export default function Home() {
+    const [isRecording, setIsRecording] = useState(false);
+
     return (
-        <main className="flex min-h-screen flex-col items-center justify-between p-24">
-            <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-                <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-                    Get started by editing&nbsp;
-                    <code className="font-mono font-bold">app/page.tsx</code>
-                </p>
-            </div>
-            <div>
-                <h1 className="text-4xl font-bold text-center">MeetFlow AI</h1>
+        <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-[var(--background)]">
+            <div className="z-10 w-full max-w-5xl items-center justify-center font-mono text-sm flex flex-col gap-12 text-center">
+                <div className="space-y-2">
+                    <h1 className="text-6xl md:text-8xl font-black tracking-tighter bg-gradient-to-b from-white to-white/40 bg-clip-text text-transparent">
+                        MeetFlow AI
+                    </h1>
+                    <p className="text-muted-foreground text-sm tracking-widest uppercase">
+                        Intelligent Meeting Companion
+                    </p>
+                </div>
+
+                <div className="flex flex-col items-center gap-6">
+                    <RecordButton
+                        isRecording={isRecording}
+                        onClick={() => setIsRecording(!isRecording)}
+                    />
+                    <div className="flex flex-col items-center gap-1">
+                        <p className={cn(
+                            "text-xs uppercase tracking-[0.2em] transition-all duration-300",
+                            isRecording ? "text-primary animate-pulse" : "text-muted-foreground"
+                        )}>
+                            {isRecording ? "Listening..." : "Tap to record"}
+                        </p>
+                    </div>
+                </div>
             </div>
         </main>
     );
+}
+
+function cn(...inputs: any[]) {
+    return inputs.filter(Boolean).join(" ");
 }

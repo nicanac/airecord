@@ -10,6 +10,15 @@ module.exports = {
             colors: {
                 background: "var(--background)",
                 foreground: "var(--foreground)",
+                primary: "var(--primary)",
+                secondary: "var(--secondary)",
+                muted: "var(--muted)",
+                "muted-foreground": "var(--muted-foreground)",
+                accent: "var(--accent)",
+                border: "var(--border)",
+            },
+            boxShadow: {
+                glass: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
             },
         },
     },
