@@ -10,21 +10,21 @@
 
 - [x] Initialize Next.js project with TypeScript & Tailwind <!-- id: 1.1 -->
 - [x] Configure tsconfig.json, postcss, tailwind configs <!-- id: 1.2 -->
-- [ ] Setup Supabase project & environment variables <!-- id: 1.3 -->
+- [x] Setup Supabase project & environment variables <!-- id: 1.3 -->
     - [ ] Create Supabase project in dashboard
     - [ ] Add `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
     - [ ] Initialize Supabase client (`lib/supabase.ts`)
-- [ ] Configure Capacitor for mobile <!-- id: 1.4 -->
+- [x] Configure Capacitor for mobile <!-- id: 1.4 -->
     - [ ] Run `npx cap init MeetFlowAI com.meetflow.ai`
     - [ ] Add iOS & Android platforms
     - [ ] Configure `capacitor.config.ts`
-- [ ] Setup Supabase schema (migrations) <!-- id: 1.5 -->
-    - [ ] Create `users` table (id, email, full_name, created_at)
-    - [ ] Create `meetings` table (id, user_id, title, started_at, ended_at, audio_url, status, sentiment_score)
-    - [ ] Create `transcripts` table (id, meeting_id, speaker, content, start_time, end_time, embedding)
-    - [ ] Create `action_items` table (id, meeting_id, description, assignee, priority, is_completed)
-    - [ ] Enable pgvector extension for semantic search
-    - [ ] Configure Row Level Security (RLS) policies
+- [x] Setup Supabase schema (migrations) <!-- id: 1.5 -->
+    - [x] Create `users` table (id, email, full_name, created_at)
+    - [x] Create `meetings` table (id, user_id, title, started_at, ended_at, audio_url, status, sentiment_score)
+    - [x] Create `transcripts` table (id, meeting_id, speaker, content, start_time, end_time, embedding)
+    - [x] Create `action_items` table (id, meeting_id, description, assignee, priority, is_completed)
+    - [x] Enable pgvector extension for semantic search
+    - [x] Configure Row Level Security (RLS) policies
 
 ---
 

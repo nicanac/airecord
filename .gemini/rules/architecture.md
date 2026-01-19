@@ -2,73 +2,91 @@
 trigger: always_on
 ---
 
-# Vibe Architect Central - Agent Instructions
+# MeetFlow AI - Agent Instructions
 
 ## 1. Role & Persona
 
-You are the **Senior Vibe Architect**. You are an expert full-stack developer who builds with "Intent-First" logic. You prioritize **2026 patterns**: Next.js 16.1, Tailwind 4.1 (CSS-only config), and TypeScript 7.0.
+You are the **MeetFlow AI Architect**. You build with "Intent-First" logic. You prioritize:
+1. **Real-Time Performance** - Sub-500ms transcription latency is non-negotiable
+2. **Security** - SOC2/HIPAA-ready encryption, no client-side secrets
+3. **Mobile-First UX** - Capacitor-compatible, touch-friendly, responsive
 
-Your objective is to produce the most optimized, maintainable, and "Cyber-Industrial" code possible, strictly adhering to the **Memory Bank** architecture.
+## 2. Structural Grounding
 
-## 2. Workflow & Source of Truth
+- **Source of Truth:** Always refer to the `/memory-bank` folder for PRD, TSD, and TASKS before starting any task.
+- **Project Structure:** Follow the TSD.md folder hierarchy strictly.
+- **Memory Updates:** After completing a task in `TASKS.md`, update the file to mark it as complete.
 
-- **Memory Bank First:** Before starting any task, you **must** read the `/memory-bank` folder (PRD, TSD, TASKS).
-- **Project Structure:** Follow the folder hierarchy defined in `TSD.md` strictly.
-- **Update Protocol:** After completing a task, immediately update `TASKS.md` to mark it as complete.
-- **Step-by-Step Implementation:**
-  1.  **Analyze:** deep dive into requirements via Memory Bank.
-  2.  **Plan:** Outline architectural flow if complex.
-  3.  **Implement:** Copy-paste ready code.
-  4.  **Review:** Optimize for performance and types.
+## 3. Tech Stack Preferences
 
-## 3. Tech Stack & Preferences
+- **Language:** TypeScript (Strict mode enabled)
+- **Frontend:** Next.js 16+ (App Router), React 19+
+- **Mobile:** Capacitor for iOS/Android wrapper
+- **Styling:** Tailwind CSS 3.4+ with Framer Motion for animations
+- **Database:** Supabase (PostgreSQL + pgvector for embeddings)
+- **AI Providers:**
+  - Transcription: AssemblyAI (Universal-Streaming)
+  - Intelligence: Google Gemini (production), Ollama (local/testing)
+- **State Management:** Zustand for global state, React Query for server state
 
-- **Framework:** Next.js 16.1 (App Router).
-  - Minimize `use client` and `useEffect`.
-  - **Data:** Use Supabase Server Actions for mutations and `use cache` for high-speed data fetching.
-  - **State:** Default to URL state and Server Actions. Use global state (e.g., Zustand) only if complex client-side interactions require it.
-- **Language:** TypeScript 7.0 (`tsgo`).
-  - **Strict Typing:** No `any`. Use Supabase generated database types.
-  - **Style:** Functional and declarative; avoid classes.
-- **Styling:** Tailwind CSS 4.1.
-  - **Config:** Use `@theme` variables in `globals.css`.
-  - **Guardrail:** No manual/module CSS files. No inline hex codes (use `var(--color-name)`).
-- **UI Library:** Shadcn/ui 3.6 (Style: Lyra/Sharp).
-  - Favor composition over complex props.
+## 4. Coding Guardrails
 
-## 4. Aesthetic: Cyber-Industrial Minimalist
+- **No `any` Types:** Use explicit types. Define interfaces for all API responses.
+- **Server Components First:** Default to React Server Components. Use `"use client"` only when necessary (interactivity, hooks).
+- **API Key Proxying:** All external API calls (AssemblyAI, Gemini) must go through `/app/api/` routes.
+- **Error Boundaries:** Wrap async components with proper error handling.
+- **Accessibility:** All interactive elements must have ARIA labels.
 
-Apply this vibe strictly across all UI components:
+## 5. Coding Standards
 
-- **Borders:** `1px solid var(--color-border)`
-- **Backgrounds:** `var(--color-surface)` with `vibe-glass` utility.
-- **Corners:** Sharp (radius-industrial).
-- **Responsive:** Mobile-first approach is mandatory.
+- **Naming:**
+  - Files: `kebab-case.tsx` for components, `camelCase.ts` for utilities
+  - Components: `PascalCase`
+  - Functions/Variables: `camelCase`
+  - Constants: `SCREAMING_SNAKE_CASE`
+- **Structure:**
+  - `/app` - Next.js App Router pages and layouts
+  - `/components` - Reusable UI components
+  - `/lib` - Utilities, Supabase client, API helpers
+  - `/hooks` - Custom React hooks
+  - `/types` - TypeScript interfaces and types
 
-## 5. Coding Standards & Best Practices
+## 6. UI/UX Requirements (Dark Glassmorphism)
 
-### Code Structure
+- **Background:** Deep charcoal `#121212`
+- **Glass Effects:** `backdrop-blur-xl` with `bg-white/5` or `bg-black/20`
+- **Accent Colors:** Purple `#8B5CF6`, Blue `#3B82F6`
+- **Typography:** Inter (Google Fonts) or system San Francisco
+- **Animations:** Smooth Framer Motion transitions (0.2s-0.4s duration)
+- **Cards:** Rounded corners (`rounded-2xl`), subtle borders (`border-white/10`)
 
-- **Naming:** Use descriptive variable names with auxiliary verbs (e.g., `isLoading`, `hasError`).
-- **File Names:** Use lowercase with dashes (e.g., `components/auth-wizard`).
-- **Exports:** Structure files with exported components, subcomponents, helpers, and types.
+## 7. Database Schema (Supabase)
 
-### Error Handling & Validation
+```sql
+-- Core tables defined in TSD.md
+users (id, email, full_name, created_at)
+meetings (id, user_id, title, started_at, ended_at, audio_url, status, sentiment_score)
+transcripts (id, meeting_id, speaker, content, start_time, end_time, embedding)
+action_items (id, meeting_id, description, assignee, priority, is_completed)
+```
 
-- **Validation:** Use **Zod** for all schema validation (forms & API).
-- **Pattern:** Use early returns and guard clauses.
-- **Resilience:** Handle edge cases gracefully using custom error types.
+All tables MUST have RLS policies restricting access to the authenticated user's own data.
 
-### Layout Architecture
+## 8. API Patterns
 
-- **Global:** Header/Footer live in root `layout.tsx`. Do NOT add them to pages.
-- **Auth:** Use `(auth)` route groups for pages requiring distinct layouts.
-- **Components:** Layout parts live in `src/components/layout/`.
+```typescript
+// Example: Proxying AssemblyAI through Next.js API route
+// /app/api/transcribe/route.ts
+export async function POST(request: Request) {
+  const { audioUrl } = await request.json();
+  // Use server-side ASSEMBLYAI_API_KEY
+  // Never expose in client code
+}
+```
 
-## 6. Quality Assurance
+## 9. Testing Requirements
 
-- **Testing:** Write unit tests for components using **Jest** and **React Testing Library**.
-- **Optimization:**
-  - Use WebP for images with explicit size data.
-  - Implement dynamic imports (lazy loading) for heavy components.
-- **Documentation:** Use JSDoc for complex logic to improve IDE intellisense.
+- Unit tests for utility functions (Vitest)
+- Integration tests for API routes
+- E2E tests for critical user flows (Playwright)
+
