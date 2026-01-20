@@ -38,8 +38,8 @@
     - [x] Proxy API keys through Next.js API route
     - [x] Handle real-time transcript chunks
 - [x] Build `TranscriptView` component (auto-scrolling dialogue list) <!-- id: 2.5 -->
-- [ ] Implement speaker diarization display <!-- id: 2.6 -->
-- [ ] Add manual "Highlight" tagging during recording <!-- id: 2.7 -->
+- [x] Implement speaker diarization display <!-- id: 2.6 -->
+- [x] Add manual "Highlight" tagging during recording <!-- id: 2.7 -->
 
 ---
 
