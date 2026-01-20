@@ -2,6 +2,10 @@
 trigger: always_on
 ---
 
+---
+trigger: always_on
+---
+
 # MeetFlow AI - Agent Instructions
 
 ## 1. Role & Persona
@@ -89,3 +93,4 @@ export async function POST(request: Request) {
 - Unit tests for utility functions (Vitest)
 - Integration tests for API routes
 - E2E tests for critical user flows (Playwright)
+

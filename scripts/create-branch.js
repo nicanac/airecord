@@ -114,20 +114,25 @@ function getCurrentBranch () {
 
 function getDefaultBranch () {
     try {
-        // Try to get the default branch from remote
-        const result = execSync('git remote show origin 2>/dev/null | grep "HEAD branch" | cut -d: -f2', {
-            encoding: 'utf8',
-            shell: true
-        }).trim();
-        return result || 'master';
-    } catch {
-        // Check if main or master exists
-        try {
-            execSync('git rev-parse --verify master', { encoding: 'utf8', stdio: 'pipe' });
-            return 'master';
-        } catch {
-            return 'master';
+        // Try simple rev-parse first for local branches
+        const branches = ['main', 'master'];
+        for (const branch of branches) {
+            try {
+                execSync(`git rev-parse --verify ${branch}`, { stdio: 'pipe' });
+                return branch;
+            } catch (e) {
+                // Ignore and try next
+            }
         }
+
+        // Try to get the default branch from remote
+        const result = execSync('git symbol-ref refs/remotes/origin/HEAD', {
+            encoding: 'utf8',
+            stdio: 'pipe'
+        }).trim();
+        return result.split('/').pop() || 'main';
+    } catch {
+        return 'main';
     }
 }
 

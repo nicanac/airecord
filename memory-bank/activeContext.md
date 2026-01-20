@@ -5,9 +5,9 @@ Phase 2: Audio Capture & Streaming.
 
 ## Recent Changes
 - Phase 1 Foundation & Infrastructure completed.
-- Supabase schema applied with RLS and pgvector.
-- Capacitor initialized for iOS/Android.
-- Next.js static export enabled for mobile compatibility.
+- Implemented `RecordButton` component with glassmorphism and pulsing animations (Task 2.1).
+- Updated `tailwind.config.js` and `app/globals.css` with Cyber-Industrial design tokens.
+- Fixed CSS syntax error and verified UI in browser.
 
 ## Next Steps
 1.  Build `RecordButton` component.
