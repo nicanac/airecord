@@ -31,17 +31,18 @@
 ## 🎙️ Phase 2: Audio Capture & Streaming
 
 - [x] Build `RecordButton` component (floating action, pulsing animation) <!-- id: 2.1 -->
-- [/] Implement microphone access via Web Audio API / Capacitor <!-- id: 2.2 -->
-- [ ] Create `WaveformVisualizer` component (Canvas/SVG real-time feedback) <!-- id: 2.3 -->
-- [ ] Integrate streaming transcription provider <!-- id: 2.4 -->
+- [x] Implement microphone access via Web Audio API / Capacitor <!-- id: 2.2 -->
+- [x] Create `WaveformVisualizer` component (Canvas/SVG real-time feedback) <!-- id: 2.3 -->
+- [/] Integrate streaming transcription provider <!-- id: 2.4 -->
     - [ ] Setup AssemblyAI or Deepgram WebSocket connection
     - [ ] Proxy API keys through Next.js API route
     - [ ] Handle real-time transcript chunks
-- [ ] Build `TranscriptView` component (auto-scrolling dialogue list) <!-- id: 2.5 -->
+- [x] Build `TranscriptView` component (auto-scrolling dialogue list) <!-- id: 2.5 -->
 - [ ] Implement speaker diarization display <!-- id: 2.6 -->
 - [ ] Add manual "Highlight" tagging during recording <!-- id: 2.7 -->
 
 ---
+
 
 ## 🧠 Phase 3: AI Intelligence Layer
 
