@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Users } from "lucide-react";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
+import { useStreamingTranscription } from "@/hooks/useStreamingTranscription";
 import { WaveformVisualizer } from "@/components/WaveformVisualizer";
 import { RecordingControls, RecordingHeader, AIStatus } from "@/components/RecordingControls";
-import { LiveTranscript, type TranscriptEntry } from "@/components/LiveTranscript";
+import { LiveTranscript } from "@/components/LiveTranscript";
 
 // Format seconds to MM:SS:CC format
 const formatDuration = (seconds: number): string => {
@@ -21,42 +21,22 @@ const formatDuration = (seconds: number): string => {
     return `00:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 };
 
-// Mock transcript entries for demo
-const generateMockTranscript = (duration: number): TranscriptEntry[] => {
-    const entries: TranscriptEntry[] = [];
-
-    if (duration >= 3) {
-        entries.push({
-            id: "1",
-            speaker: "Speaker 1",
-            content: "Let's review the API and see if we have time for the frontend updates.",
-            timestamp: 3,
-        });
-    }
-
-    if (duration >= 8) {
-        entries.push({
-            id: "2",
-            speaker: "Speaker 2",
-            content: "I think we should prioritize the authentication flow first. The team has been waiting on that.",
-            timestamp: 8,
-        });
-    }
-
-    if (duration >= 15) {
-        entries.push({
-            id: "3",
-            speaker: "Speaker 1",
-            content: "Good point. Sarah, can you take the lead on the backend integration? Mike can handle the UI components.",
-            timestamp: 15,
-        });
-    }
-
-    return entries;
-};
-
 export default function RecordingPage() {
     const router = useRouter();
+    const hasStartedRef = useRef(false);
+
+    // Streaming transcription hook
+    const {
+        isConnected: isTranscriptionConnected,
+        isConnecting: isTranscriptionConnecting,
+        transcriptEntries,
+        error: transcriptionError,
+        connect: connectTranscription,
+        disconnect: disconnectTranscription,
+        sendAudio,
+    } = useStreamingTranscription();
+
+    // Audio recorder hook with streaming callback
     const {
         isRecording,
         isPaused,
@@ -66,42 +46,76 @@ export default function RecordingPage() {
         stopRecording,
         pauseRecording,
         resumeRecording,
-        error,
-    } = useAudioRecorder();
+        error: recorderError,
+    } = useAudioRecorder({
+        onAudioData: sendAudio,
+    });
 
     const [isAutoScrolling, setIsAutoScrolling] = useState(true);
-    const [transcriptEntries, setTranscriptEntries] = useState<TranscriptEntry[]>([]);
     const [meetingTitle] = useState("Product Sync - Q3 Roadmap");
 
-    // Start recording when page loads
+    // Start recording and transcription when page loads
     useEffect(() => {
-        startRecording();
-    }, []);
+        if (hasStartedRef.current) return;
+        hasStartedRef.current = true;
 
-    // Update mock transcript based on duration
-    useEffect(() => {
-        setTranscriptEntries(generateMockTranscript(duration));
-    }, [duration]);
+        const initializeRecording = async () => {
+            // First connect to transcription service
+            await connectTranscription();
+            // Then start recording
+            await startRecording();
+        };
+
+        initializeRecording();
+
+        // Cleanup on unmount
+        return () => {
+            disconnectTranscription();
+        };
+    }, [connectTranscription, startRecording, disconnectTranscription]);
 
     const handleStop = useCallback(async () => {
+        // Disconnect transcription first
+        disconnectTranscription();
+
+        // Stop recording
         const audioBlob = await stopRecording();
         if (audioBlob) {
             // In real app, upload blob and create meeting record
             console.log("Recording stopped, blob size:", audioBlob.size);
         }
+
         // Navigate to meeting summary (mock ID for now)
         router.push("/meeting/new-meeting-id");
-    }, [stopRecording, router]);
+    }, [stopRecording, disconnectTranscription, router]);
 
     const handleBack = useCallback(async () => {
+        disconnectTranscription();
         await stopRecording();
         router.back();
-    }, [stopRecording, router]);
+    }, [stopRecording, disconnectTranscription, router]);
 
     const handleHighlight = useCallback(() => {
         // Add highlight timestamp
         console.log("Highlight added at:", duration);
     }, [duration]);
+
+    // Combine errors
+    const error = recorderError || transcriptionError;
+
+    // Determine AI status message
+    const getAIStatus = (): string => {
+        if (isTranscriptionConnecting) {
+            return "Connecting to transcription service...";
+        }
+        if (!isTranscriptionConnected && !isTranscriptionConnecting) {
+            return "Transcription offline - recording locally";
+        }
+        if (transcriptEntries.length === 0) {
+            return "AI listening for speech...";
+        }
+        return "AI is transcribing and generating insights...";
+    };
 
     return (
         <div className="min-h-screen bg-[var(--background)] flex flex-col">
@@ -120,8 +134,14 @@ export default function RecordingPage() {
                         {formatDuration(duration)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
-                        {isPaused ? "Paused" : "Recording active"}
+                        {isPaused ? "Paused" : isRecording ? "Recording active" : "Starting..."}
                     </p>
+                    {isTranscriptionConnected && (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-green-400 mt-1">
+                            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                            Live transcription
+                        </span>
+                    )}
                 </motion.div>
 
                 {/* Waveform Visualizer */}
@@ -182,7 +202,7 @@ export default function RecordingPage() {
             <div className="px-6 pb-safe">
                 {/* AI Status */}
                 <div className="pb-4">
-                    <AIStatus status="AI is generating action items..." />
+                    <AIStatus status={getAIStatus()} />
                 </div>
 
                 {/* Controls */}

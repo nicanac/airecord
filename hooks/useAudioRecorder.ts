@@ -11,6 +11,18 @@ export interface AudioRecorderState {
     error: string | null;
 }
 
+export interface AudioRecorderOptions {
+    /**
+     * Callback for streaming audio data (PCM 16-bit, 16kHz mono)
+     * Called approximately every 100ms with audio buffer
+     */
+    onAudioData?: (audioData: ArrayBuffer) => void;
+    /**
+     * Sample rate for streaming (default: 16000 for AssemblyAI)
+     */
+    streamingSampleRate?: number;
+}
+
 export interface UseAudioRecorderReturn extends AudioRecorderState {
     startRecording: () => Promise<void>;
     stopRecording: () => Promise<Blob | null>;
@@ -19,7 +31,14 @@ export interface UseAudioRecorderReturn extends AudioRecorderState {
     getAudioBlob: () => Blob | null;
 }
 
-export function useAudioRecorder(): UseAudioRecorderReturn {
+// Target sample rate for AssemblyAI streaming
+const STREAMING_SAMPLE_RATE = 16000;
+
+export function useAudioRecorder(
+    options: AudioRecorderOptions = {}
+): UseAudioRecorderReturn {
+    const { onAudioData, streamingSampleRate = STREAMING_SAMPLE_RATE } = options;
+
     const [state, setState] = useState<AudioRecorderState>({
         isRecording: false,
         isPaused: false,
@@ -38,6 +57,13 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     const startTimeRef = useRef<number>(0);
     const pausedDurationRef = useRef<number>(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const processorRef = useRef<ScriptProcessorNode | null>(null);
+    const onAudioDataRef = useRef(onAudioData);
+
+    // Keep callback ref updated
+    useEffect(() => {
+        onAudioDataRef.current = onAudioData;
+    }, [onAudioData]);
 
     // Cleanup on unmount
     useEffect(() => {
@@ -50,6 +76,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
             }
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach(track => track.stop());
+            }
+            if (processorRef.current) {
+                processorRef.current.disconnect();
             }
             if (audioContextRef.current) {
                 audioContextRef.current.close();
@@ -77,6 +106,45 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         animationFrameRef.current = requestAnimationFrame(updateAnalyzerData);
     }, [state.isRecording, state.isPaused]);
 
+    /**
+     * Downsample audio from source sample rate to target sample rate
+     */
+    const downsampleBuffer = useCallback(
+        (buffer: Float32Array, sourceSampleRate: number): ArrayBuffer => {
+            if (sourceSampleRate === streamingSampleRate) {
+                return float32ToPCM16(buffer);
+            }
+
+            const ratio = sourceSampleRate / streamingSampleRate;
+            const newLength = Math.round(buffer.length / ratio);
+            const result = new Float32Array(newLength);
+
+            for (let i = 0; i < newLength; i++) {
+                const srcIndex = Math.round(i * ratio);
+                result[i] = buffer[srcIndex];
+            }
+
+            return float32ToPCM16(result);
+        },
+        [streamingSampleRate]
+    );
+
+    /**
+     * Convert Float32Array audio to PCM 16-bit
+     */
+    const float32ToPCM16 = (input: Float32Array): ArrayBuffer => {
+        const buffer = new ArrayBuffer(input.length * 2);
+        const view = new DataView(buffer);
+
+        for (let i = 0; i < input.length; i++) {
+            // Clamp and convert to 16-bit signed integer
+            const sample = Math.max(-1, Math.min(1, input[i]));
+            view.setInt16(i * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+        }
+
+        return buffer;
+    };
+
     const startRecording = useCallback(async () => {
         try {
             // Request microphone access
@@ -85,19 +153,49 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
                     echoCancellation: true,
                     noiseSuppression: true,
                     autoGainControl: true,
+                    sampleRate: { ideal: 48000 }, // Higher sample rate for better quality
                 },
             });
 
             streamRef.current = stream;
 
-            // Setup Audio Context for visualization
+            // Setup Audio Context for visualization and streaming
             audioContextRef.current = new AudioContext();
             const source = audioContextRef.current.createMediaStreamSource(stream);
+
+            // Setup Analyzer for visualization
             analyzerRef.current = audioContextRef.current.createAnalyser();
             analyzerRef.current.fftSize = 256;
             source.connect(analyzerRef.current);
 
-            // Setup MediaRecorder
+            // Setup ScriptProcessor for streaming audio data to transcription
+            if (onAudioDataRef.current) {
+                // Buffer size of 4096 gives ~85ms chunks at 48kHz
+                const bufferSize = 4096;
+                processorRef.current = audioContextRef.current.createScriptProcessor(
+                    bufferSize,
+                    1,
+                    1
+                );
+
+                processorRef.current.onaudioprocess = (event) => {
+                    if (state.isPaused) return;
+
+                    const inputBuffer = event.inputBuffer.getChannelData(0);
+                    const sourceSampleRate = audioContextRef.current?.sampleRate || 48000;
+
+                    // Downsample and convert to PCM16
+                    const pcmData = downsampleBuffer(inputBuffer, sourceSampleRate);
+
+                    // Send to streaming transcription
+                    onAudioDataRef.current?.(pcmData);
+                };
+
+                source.connect(processorRef.current);
+                processorRef.current.connect(audioContextRef.current.destination);
+            }
+
+            // Setup MediaRecorder for local recording
             const mediaRecorder = new MediaRecorder(stream, {
                 mimeType: MediaRecorder.isTypeSupported("audio/webm")
                     ? "audio/webm"
@@ -142,7 +240,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
             setState(prev => ({ ...prev, error: errorMessage }));
             console.error("Recording error:", err);
         }
-    }, [updateAnalyzerData]);
+    }, [updateAnalyzerData, downsampleBuffer]);
 
     const stopRecording = useCallback(async (): Promise<Blob | null> => {
         return new Promise((resolve) => {
@@ -165,6 +263,10 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
                 }
                 if (timerRef.current) {
                     clearInterval(timerRef.current);
+                }
+                if (processorRef.current) {
+                    processorRef.current.disconnect();
+                    processorRef.current = null;
                 }
 
                 setState(prev => ({
