@@ -15,6 +15,8 @@ export interface UseStreamingTranscriptionReturn extends StreamingTranscriptionS
     connect: () => Promise<void>;
     disconnect: () => void;
     sendAudio: (audioData: ArrayBuffer) => void;
+    addHighlight: (timestamp: number) => void;
+    highlights: number[];
 }
 
 // AssemblyAI WebSocket endpoint
@@ -37,6 +39,9 @@ interface AssemblyAIMessage {
     error?: string;
 }
 
+// Speaker colors for visual differentiation
+const SPEAKER_LABELS = ["Speaker 1", "Speaker 2", "Speaker 3", "Speaker 4", "Speaker 5"];
+
 export function useStreamingTranscription(): UseStreamingTranscriptionReturn {
     const [state, setState] = useState<StreamingTranscriptionState>({
         isConnected: false,
@@ -46,9 +51,13 @@ export function useStreamingTranscription(): UseStreamingTranscriptionReturn {
         sessionId: null,
     });
 
+    const [highlights, setHighlights] = useState<number[]>([]);
+
     const wsRef = useRef<WebSocket | null>(null);
     const entryIdRef = useRef<number>(0);
     const partialEntryRef = useRef<TranscriptEntry | null>(null);
+    const currentSpeakerRef = useRef<number>(0);
+    const lastAudioEndRef = useRef<number>(0);
 
     // Cleanup on unmount
     useEffect(() => {
@@ -57,6 +66,21 @@ export function useStreamingTranscription(): UseStreamingTranscriptionReturn {
                 wsRef.current.close();
             }
         };
+    }, []);
+
+    /**
+     * Detect speaker change based on silence gap between utterances
+     * A gap > 2 seconds suggests a different speaker
+     */
+    const detectSpeakerChange = useCallback((audioStart: number): string => {
+        const silenceGap = audioStart - lastAudioEndRef.current;
+        
+        // If there's a significant gap (>2s), likely a different speaker
+        if (silenceGap > 2000 && lastAudioEndRef.current > 0) {
+            currentSpeakerRef.current = (currentSpeakerRef.current + 1) % SPEAKER_LABELS.length;
+        }
+
+        return SPEAKER_LABELS[currentSpeakerRef.current];
     }, []);
 
     const connect = useCallback(async () => {
@@ -81,7 +105,8 @@ export function useStreamingTranscription(): UseStreamingTranscriptionReturn {
             const { token } = await tokenResponse.json();
 
             // Create WebSocket connection with token and sample rate
-            const wsUrl = `${ASSEMBLYAI_REALTIME_URL}?sample_rate=16000&token=${token}`;
+            // Enable format_turns for better turn detection
+            const wsUrl = `${ASSEMBLYAI_REALTIME_URL}?sample_rate=16000&token=${token}&format_turns=true`;
             const ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
@@ -147,13 +172,15 @@ export function useStreamingTranscription(): UseStreamingTranscriptionReturn {
             case "PartialTranscript":
                 // Update partial transcript (shown as "typing" indicator)
                 if (message.text && message.text.trim()) {
-                    const timestamp = message.audio_start ? message.audio_start / 1000 : 0;
+                    const audioStart = message.audio_start || 0;
+                    const timestamp = audioStart / 1000;
+                    const speaker = detectSpeakerChange(audioStart);
 
                     if (!partialEntryRef.current) {
                         // Create new partial entry
                         partialEntryRef.current = {
                             id: `partial-${Date.now()}`,
-                            speaker: "Speaker 1", // AssemblyAI doesn't provide speaker in basic mode
+                            speaker,
                             content: message.text,
                             timestamp,
                         };
@@ -181,10 +208,17 @@ export function useStreamingTranscription(): UseStreamingTranscriptionReturn {
             case "FinalTranscript":
                 // Finalize transcript entry
                 if (message.text && message.text.trim()) {
-                    const timestamp = message.audio_start ? message.audio_start / 1000 : 0;
+                    const audioStart = message.audio_start || 0;
+                    const audioEnd = message.audio_end || audioStart;
+                    const timestamp = audioStart / 1000;
+                    const speaker = detectSpeakerChange(audioStart);
+
+                    // Update last audio end for speaker detection
+                    lastAudioEndRef.current = audioEnd;
+
                     const newEntry: TranscriptEntry = {
                         id: `entry-${++entryIdRef.current}`,
-                        speaker: "Speaker 1",
+                        speaker,
                         content: message.text,
                         timestamp,
                     };
@@ -215,7 +249,7 @@ export function useStreamingTranscription(): UseStreamingTranscriptionReturn {
                 }));
                 break;
         }
-    }, []);
+    }, [detectSpeakerChange]);
 
     const disconnect = useCallback(() => {
         if (wsRef.current) {
@@ -242,11 +276,32 @@ export function useStreamingTranscription(): UseStreamingTranscriptionReturn {
         }
     }, []);
 
+    /**
+     * Add a highlight at the specified timestamp
+     */
+    const addHighlight = useCallback((timestamp: number) => {
+        setHighlights(prev => [...prev, timestamp]);
+
+        // Also mark the current transcript entry as highlighted if it exists
+        setState(prev => {
+            const entries = prev.transcriptEntries.map((entry, index) => {
+                // Find the entry closest to this timestamp
+                if (index === prev.transcriptEntries.length - 1) {
+                    return { ...entry, isHighlighted: true };
+                }
+                return entry;
+            });
+            return { ...prev, transcriptEntries: entries };
+        });
+    }, []);
+
     return {
         ...state,
         connect,
         disconnect,
         sendAudio,
+        addHighlight,
+        highlights,
     };
 }
 

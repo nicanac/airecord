@@ -34,6 +34,8 @@ export default function RecordingPage() {
         connect: connectTranscription,
         disconnect: disconnectTranscription,
         sendAudio,
+        addHighlight,
+        highlights,
     } = useStreamingTranscription();
 
     // Audio recorder hook with streaming callback
@@ -53,6 +55,7 @@ export default function RecordingPage() {
 
     const [isAutoScrolling, setIsAutoScrolling] = useState(true);
     const [meetingTitle] = useState("Product Sync - Q3 Roadmap");
+    const [showHighlightToast, setShowHighlightToast] = useState(false);
 
     // Start recording and transcription when page loads
     useEffect(() => {
@@ -83,11 +86,12 @@ export default function RecordingPage() {
         if (audioBlob) {
             // In real app, upload blob and create meeting record
             console.log("Recording stopped, blob size:", audioBlob.size);
+            console.log("Highlights:", highlights);
         }
 
         // Navigate to meeting summary (mock ID for now)
         router.push("/meeting/new-meeting-id");
-    }, [stopRecording, disconnectTranscription, router]);
+    }, [stopRecording, disconnectTranscription, router, highlights]);
 
     const handleBack = useCallback(async () => {
         disconnectTranscription();
@@ -96,9 +100,13 @@ export default function RecordingPage() {
     }, [stopRecording, disconnectTranscription, router]);
 
     const handleHighlight = useCallback(() => {
-        // Add highlight timestamp
-        console.log("Highlight added at:", duration);
-    }, [duration]);
+        // Add highlight at current timestamp
+        addHighlight(duration);
+
+        // Show toast feedback
+        setShowHighlightToast(true);
+        setTimeout(() => setShowHighlightToast(false), 2000);
+    }, [duration, addHighlight]);
 
     // Combine errors
     const error = recorderError || transcriptionError;
@@ -116,6 +124,9 @@ export default function RecordingPage() {
         }
         return "AI is transcribing and generating insights...";
     };
+
+    // Count unique speakers
+    const uniqueSpeakers = new Set(transcriptEntries.map(e => e.speaker)).size;
 
     return (
         <div className="min-h-screen bg-[var(--background)] flex flex-col">
@@ -136,12 +147,24 @@ export default function RecordingPage() {
                     <p className="text-xs text-muted-foreground mt-2">
                         {isPaused ? "Paused" : isRecording ? "Recording active" : "Starting..."}
                     </p>
-                    {isTranscriptionConnected && (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-green-400 mt-1">
-                            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                            Live transcription
-                        </span>
-                    )}
+                    <div className="flex items-center justify-center gap-3 mt-2">
+                        {isTranscriptionConnected && (
+                            <span className="inline-flex items-center gap-1.5 text-xs text-green-400">
+                                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                                Live transcription
+                            </span>
+                        )}
+                        {uniqueSpeakers > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                                {uniqueSpeakers} speaker{uniqueSpeakers !== 1 ? "s" : ""} detected
+                            </span>
+                        )}
+                        {highlights.length > 0 && (
+                            <span className="text-xs text-yellow-400">
+                                ★ {highlights.length} highlight{highlights.length !== 1 ? "s" : ""}
+                            </span>
+                        )}
+                    </div>
                 </motion.div>
 
                 {/* Waveform Visualizer */}
@@ -225,6 +248,19 @@ export default function RecordingPage() {
                     animate={{ opacity: 1, y: 0 }}
                 >
                     <p className="text-sm text-white">{error}</p>
+                </motion.div>
+            )}
+
+            {/* Highlight Toast */}
+            {showHighlightToast && (
+                <motion.div
+                    className="fixed top-20 left-4 right-4 bg-yellow-500/90 backdrop-blur-lg rounded-xl p-4 flex items-center gap-3"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                >
+                    <span className="text-lg">⭐</span>
+                    <p className="text-sm text-black font-medium">Highlight added at {formatDuration(duration)}</p>
                 </motion.div>
             )}
         </div>
