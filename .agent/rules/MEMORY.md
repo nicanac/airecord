@@ -67,17 +67,7 @@ gh pr create --title "feat: task description" --body "Closes #issue"
 - Upsert completion status to Pinecone (`meetflow-docs` namespace)
 - Sync task status to Notion (page ID: `2ed9555c-6779-8034-9e0a-d76d1dbfff2e`)
 - Update `memory-bank/activeContext.md` with recent changes
-
-### 5. Next Task
-- Checkout `main`, pull latest
-- **Review docs for updates needed:**
-  - `.gemini/rules/architecture.md` - tech stack, guardrails still accurate?
-  - `memory-bank/` - PRD, TSD, activeContext reflect current state?
-- Repeat from Step 1 with next incomplete task
-```
-
-**Workflows**: `/create-branch`,  `/task-loo`, `/commit-fast-conventional`
-
+- Update pinecone 
 ## 🌲 Pinecone Knowledge Base
 
 The project uses Pinecone for vector-based knowledge retrieval.
@@ -94,4 +84,14 @@ The project uses Pinecone for vector-based knowledge retrieval.
 - `mcp_pinecone-mcp-server_search-records` - Query existing knowledge
 - `mcp_pinecone-mcp-server_upsert-records` - Add new knowledge
 - `mcp_pinecone-mcp-server_list-indexes` - List available indexes
+
+### 5. Next Task
+- Checkout `main`, pull latest
+- **Review docs for updates needed:**
+  - `.gemini/rules/architecture.md` - tech stack, guardrails still accurate?
+  - `memory-bank/` - PRD, TSD, activeContext reflect current state?
+- Repeat from Step 1 with next incomplete task
+```
+
+**Workflows**: `/create-branch`,  `/task-loo`, `/commit-fast-conventional`
 
