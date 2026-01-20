@@ -46,7 +46,7 @@
 
 ## 🧠 Phase 3: AI Intelligence Layer
 
-- [/] Setup Gemini API integration (via Next.js API route) <!-- id: 3.1 -->
+- [x] Setup Gemini API integration (via Next.js API route) <!-- id: 3.1 -->
 - [ ] Build post-meeting summarization pipeline <!-- id: 3.2 -->
     - [ ] Send full transcript to Gemini
     - [ ] Parse structured summary response
